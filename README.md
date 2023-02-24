@@ -97,8 +97,9 @@ groups
 docker run hello-world
 ```
 4. Download and install `docker-compose`:
-  * Check [the docker-compose releases page](https://github.com/docker/compose/releases)
-    for more recent releases. Make sure you choose the `linux-aarch64` binary
+
+   Check [the docker-compose releases page](https://github.com/docker/compose/releases)
+   for more recent releases. Make sure you choose the `linux-aarch64` binary
 
 ```
 sudo curl -L https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-aarch64 -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
