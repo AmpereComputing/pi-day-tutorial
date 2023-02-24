@@ -101,12 +101,18 @@ wordpress1-db-1          mysql/mysql-server:8.0   "/entrypoint.sh mysq…"   db 
 wordpress1-wordpress-1   wordpress:6.1-apache     "docker-entrypoint.s…"   wordpress           3 hours ago         Up 3 hours             0.0.0.0:80->80/tcp, :::80->80/tcp
 ```
 
+![WordPress installation - screen 1](WordPress_installation_1.png)
+
 Clicking through this, we can now name our blog, create a user ID and password, and log in to
 our blog to see a “Hello World” post, create our first page, and write our first blog
 entry – all running in containers, and started in a few minutes!
 
+![WordPress installation - screen 2](WordPress_installation_2.png)
+
+![The initial WordPress dashboard](WordPress_dashboard.png)
+
 In our next step, we will augment this application by moving to an nginx proxy, and
 pre-loading some content into our blog. You can now bring down your WordPress instance
-with docker-compose down and move on to step 2.
+with `docker-compose down` and move on to [step 2](../wordpress2).
 
 
