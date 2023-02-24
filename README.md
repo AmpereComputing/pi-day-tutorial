@@ -112,15 +112,15 @@ git clone https://github.com/dneary/pi-day-tutorial
 
 We now have everything we need to get started! We will build up in stages.
 
-1. In [stage 1](wordpress1), (using the configuration files in `wordpress1`)  we
+1. In [part 1](wordpress1), (using the configuration files in `wordpress1`)  we
    will start a new WordPress instance from scratch, and go through the installation
    process.
-2. In [stage 2](wordpress2), we will pre-load some content (including this post and
+2. In [part 2](wordpress2), we will pre-load some content (including this post and
    documentation for this session!) to our WordPress instance, and add an nginx proxy
    to pass through connections.
-3. In [stage 3](wordpress3), we will start another two WordPress instances
+3. In [part 3](wordpress3), we will start another two WordPress instances
    and configure nginx to load balance across them.
-4. Finally, in [stage 4](wordpress4), we will add a caching plug-in to WordPress,
+4. Finally, in [part 4](wordpress4), we will add a caching plug-in to WordPress,
    start a Redis instance, and configure WordPress to use Redis as an object cache.
 
 [Let's get started!](wordpress1/)
