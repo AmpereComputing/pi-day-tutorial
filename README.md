@@ -35,7 +35,7 @@ will look like this:
 
 ![Application architecture for today - nginx, 3 copies of wordpress on Apache, MySQL server, redis](Application_diagram.png)
 
-#Prerequisites
+## Prerequisites
 
 Before you get started, you will need an Ampere A1 instance running on
 Oracle Cloud.
