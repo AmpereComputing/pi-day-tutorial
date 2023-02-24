@@ -62,6 +62,11 @@ the environment variables we pass into the MySQL database will auto-create the
 and while, in principle, the database is not accessible to the outside world, you should
 probably choose a different password ;-)
 
+One interesting feature of this first configuration file is the `healthcheck` section
+for MySQL. As we advance in the project, it can take a few seconds before MySQL is ready
+to accept connections. We add a healthcheck which runs a trivial query. It waits 20s
+between checks, and in a future step, we will delay starting the `wordpress` containers
+until the database is finished its initialization.
 
 Inside our project, the containers will be able to talk to each other using just their
 service name. That’s why, in our WordPress container, we can set the `WORDPRESS_DB_HOST`
