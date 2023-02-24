@@ -1,83 +1,122 @@
-# Deploying a LAMP stack using docker-compose
+# Welcome to Pi Day 2023!
 
-This project will enable you to get started with a starter multi-container LAMP stack using docker
-containers. We will start 3 containers, each with a specific role:
+This hour, we will take a journey through what is involved in putting together
+a realistic cloud-native application using Docker containers in a single
+Ampere A1 VM instance on Oracle Cloud. By the end of our time together, you
+will have:
 
-1.  `nginx`: We map port 80 of `localhost` to port 80 of the `nginx` container. This container will
-    proxy for the entire application. This will enable us to modify the architecture of our application
-    without changing how our users interact with it. For example, behind a proxy, we might load balance
-    across multiple application servers, or add a reverse proxy cache to avoid hitting the application
-    for static resources.
-2.  `wordpress`: This is a basic Apache2/PHP container with the latest version of Wordpress pre-installed.
-    We add configuration options for the Wordpress container for the database connection to a separate
-    database node. For test purposes, we map port 80 of the Wordpress container to port 8080 of the host.
-3.  `mysql-server`: This container will serve as our database. The database will be initialized with an
-    empty database and a pre-configured user through environment variables.
+* Created a Wordpress instance and a separate MySQL instance with some
+  reference content
+* Added an nginx proxy to enable us to hide the application's internal
+  architecture, and make changes to scale our application
+* Enable load balancing across multiple WordPress instances
+* Installed a caching system which will accelerate the delivery of static
+  content
+* Added a [Redis object cache](https://redis.io/)  which will reduce the
+  amount of compute power used by our web servers
+* At each step, we will test the performance of our instance to verify that
+  we are improving its performance and scalability
 
-Each of these containers is added to a bridge network for the application. These containers can reach
-each other by name (`db`, `wordpress`, and `proxy`), but from the host, we cannot connect to them,
-except via the `docker` command. For example, if I try to point my web browser at the `wordpress`
-container, I cannot connect to it. 
+For the purposes of today's presentation, we will do all of these in a single
+four-OCPU Ampere Altra A1 instance on the OCI Always Free tier. There are
+lots of things we could do to continue to make this application more "cloud
+native", including registering for SSL certificates and enabling secure
+access over HTTPS, using object storage for uploads rather than saving them
+to the filesystem, backing up our database for effective disaster recovery,
+adding monitoring to ensure that we stay on top of the load of the
+application, and moving our application to a clustered solution based on
+Kubernetes.
 
-## Prerequisites
+However, all of this is out of scope for today. By the end of today's session,
+you will have a total of six container instances running. We will map port 80
+of our VM to port 80 of the nginx container, and use a network bridge to
+connect all of our application containers. Our final WordPress architecture
+will look like this:
 
-Throughout, we assume that you are running on a modern Linux distribution. The author uses the RHEL 
-family of operating systems - CentOS Streams, AlmaLinux, Rocky Linux, Oracle Linux, but any
-platform-specific commands will be flagged. If you are using a Debian-family distribution, you will
-need to use an equivalent on those platforms.
+![Application architecture for today - nginx, 3 copies of wordpress on Apache, MySQL server, redis](Application_diagram.png)
 
-We also assume that you have installed Docker (docker.io) and
-[docker-compose](https://github.com/docker/compose/releases). The instructions should work with
-podman and podman-compose, but we have not tested them.
+#Prerequisites
 
-We will also use `git` to check out the code from github.
+Before you get started, you will need an Ampere A1 instance running on
+Oracle Cloud.
 
-We will want to run docker-compose as an unprivileged user, so we have to add our user to
-the `docker` group.
+Throughout this session, we will assume that you are running Oracle Linux 8,
+and the tutorial has made this assumption for all commands, file locations,
+and usernames.
 
-    usermod -aG docker $USER
+To create an instance, first sign up to [Oracle Cloud](https://cloud.oracle.com),
+and on the dashboard select “Create a VM instance” in the “Launch Resources”
+section. We will create the instance in the “root” compartment. In the “Image
+and shape” section, we are going to edit the defaults, and under “Shape”, we
+will change the shape to choose the Ampere type, with 4 OCPUs and 12 GB of RAM –
+this will max out your “Always Free” quota.
 
-After running this, you need to ensure that you relaunch a login shell for the change to take effect.
-You can do this explicitly with:
+If you already have another VM running on OCI, you can certainly complete this
+tutorial with a smaller instance, but you will increase resource contention as
+we increase the number of containers.
 
-    sudo -s -u $USER
+Choosing the Ampere family:
+![Choosing the Ampere shape series](Oracle_Cloud_Shape_family.png)
 
-but for the change to take effect permanently in your instance, you will need to restart the `sshd`
-service. On the RHEL family, this means:
+Sizing the instance:
+![Sizing the instance](OCI_shape_sizing.png)
 
-    sudo systemctl restart sshd
+You will also need to modify the Virtual Cloud Network settings for the
+instance to enable HTTP and HTTPS traffic and get a public IPv4 address. Then
+generate an SSH key pair (or upload the public key to one you already have) to
+allow you to connect to the instance over SSH.
 
-The next time you connect to your instance with ssh, you should see `docker` group in the output of
-`groups` for your user.
+Once you have completed these settings, you can click “Create” to start your
+instance. When you click on your instance name, you can find its public IP
+address for connections.
 
-To test that you now have Docker correctly installed and configured, run:
+You can also automate the creation of instances using a tool like Terraform –
+we provide
+[Terraform files and tutorials](ihttps://github.com/amperecomputing/terraform-oci-ampere-a1)
+on Ampere’s github page to help.
 
-    docker run hello-world
+Once you have your instance running Oracle Linux, there are a few things we will
+need to install to ensure that we can run docker-compose to launch our application.
 
-You should see a Docker container being downloaded from dockerhub, and a message confirming that your
-installation appears to be running correctly.
+1. As root, install Docker, and updating operating system packages:
+```
+sudo -s
+dnf install -y yum-utils
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+dnf update -y && dnf install -y docker-ce docker-ce-cli containerd.io
+```
+2. Enable the Docker service, and ensure that the opc user can run it:
+```
+systemctl start docker && systemctl enable docker
+usermod -aG docker opc
+sudo -s -u opc
+```
+3. Now check that the opc user is in the docker group, and has permission to run Docker:
+```
+groups
+docker run hello-world
+```
+4. Download and install `docker-compose`:
+  * Check [the docker-compose releases page](https://github.com/docker/compose/releases)
+    for more recent releases. Make sure you choose the `linux-aarch64` binary
 
-## Getting started
+```
+sudo curl -L https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-aarch64 -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
+```
+5. Finally, we will install `git` and download the repository for today's session:
+```
+sudo dnf install -y git
+git clone https://github.com/dneary/pi-day-tutorial
+```
 
-Now that we have things set up, check out this project:
+We now have everything we need to get started! We will build up in stages. In stage 1,
+we will start a new WordPress instance from scratch, and go through the installation
+process. In stage 2, we will pre-load some content (including this post and
+documentation for this session!) to our WordPress instance, and add an nginx proxy
+to pass through connections. In stage 3, we will start another two WordPress instances
+and configure nginx to load balance across them. Finally, in stage 4, we will add a
+caching plug-in to WordPress, start a Redis instance, and configure WordPress to use
+Redis as an object cache.
 
-    git clone https://github.com/dneary/docker-lamp.git
-    cd docker-lamp
+[Let's get started!](wordpress1/)
 
-We need a few directories to be created that do not yet exist:
-
-    mkdir -p wordpress mysql/wordpress mysql/logs mysql/initdb
-
-We can now copy a database back-up from another Wordpress site into `mysql/initdb` to initialize the
-database when we start our stack. If you don't already have a back-up, don't worry about it, we will
-go through the Wordpress installation process.
-
-We should now be ready to run:
-
-    docker-compose up -d
-
-This will process the docker-compose.yml file in this directory, and download three containers: `nginx`, 
-`wordpress`, and `mysql-server`. We start these containers as the services `proxy`, `wordpress`, and `db`,
-and they are all added to a bridge network created for the project. Since we do not (yet) have a domain name,
-we do not enable and configure `https` using SSL certificates. If all goes well, you should now be able to
-go to `http://localhost:80` and start the Wordpress installation process.
