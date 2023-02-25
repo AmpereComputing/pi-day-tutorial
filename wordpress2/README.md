@@ -1,83 +1,115 @@
-# Deploying a LAMP stack using docker-compose
+# Part 2: Adding a proxy
 
-This project will enable you to get started with a starter multi-container LAMP stack using docker
-containers. We will start 3 containers, each with a specific role:
+Now we will enable ourselves to evolve the application architecture by
+separating out the HTTP end-point that users connect to from the
+application server that is serving content. To do this, we will use nginx
+as a fast, lightweight proxy, and continue to use an Apache2/php instance
+running WordPress to generate the dynamic content. For the moment, we
+should not see a big change in performance, but this is an important step
+to enabling us to scale our application by caching content, and
+load-balancing compute-heavy work across multiple instances.
 
-1.  `nginx`: We map port 80 of `localhost` to port 80 of the `nginx` container. This container will
-    proxy for the entire application. This will enable us to modify the architecture of our application
-    without changing how our users interact with it. For example, behind a proxy, we might load balance
-    across multiple application servers, or add a reverse proxy cache to avoid hitting the application
-    for static resources.
-2.  `wordpress`: This is a basic Apache2/PHP container with the latest version of Wordpress pre-installed.
-    We add configuration options for the Wordpress container for the database connection to a separate
-    database node. For test purposes, we map port 80 of the Wordpress container to port 8080 of the host.
-3.  `mysql-server`: This container will serve as our database. The database will be initialized with an
-    empty database and a pre-configured user through environment variables.
+The main change we will make in `docker-compose.yml` is to add a new proxy
+service which will download the latest nginx container, pass through host
+port 80 to the container (and we remove this config from our wordpress
+container). The top of our `services` section now looks like this:
 
-Each of these containers is added to a bridge network for the application. These containers can reach
-each other by name (`db`, `wordpress`, and `proxy`), but from the host, we cannot connect to them,
-except via the `docker` command. For example, if I try to point my web browser at the `wordpress`
-container, I cannot connect to it. 
+```
+services:
+  proxy:
+    restart: always
+    image: nginx:latest
+    networks: 
+      - external_network
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/tmp:/var/run/nginx
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    command: [ nginx-debug, '-g', 'daemon off;' ]
+```
 
-## Prerequisites
+We now map a custom configuration for our WordPress install into the
+`/etc/nginx/conf.d` directory of our container. This basic nginx configuration
+specifies that we are the default server for all connections to port 80,
+regardless of the requested domain name (this allows us to connect using just
+the IP address), and that all requests should be passed to the wordpress
+service:
 
-Throughout, we assume that you are running on a modern Linux distribution. The author uses the RHEL 
-family of operating systems - CentOS Streams, AlmaLinux, Rocky Linux, Oracle Linux, but any
-platform-specific commands will be flagged. If you are using a Debian-family distribution, you will
-need to use an equivalent on those platforms.
+```
+server {
+        listen 80 default_server;
+        listen   [::]:80 default_server;
 
-We also assume that you have installed Docker (docker.io) and
-[docker-compose](https://github.com/docker/compose/releases). The instructions should work with
-podman and podman-compose, but we have not tested them.
+        server_name example.com;
+        location / {
+            proxy_pass http://wordpress;
+        }
+}
+```
 
-We will also use `git` to check out the code from github.
+We also added a new database file to `mysql/initdb` which maps to the special
+directory in the container `/docker-entrypoint-initdb.d` - if the database is
+not already initialized, the database back-up in this directory will
+automatically be loaded at start-up, as described in [the documentation of
+the MySQL container](https://hub.docker.com/_/mysql).
 
-We will want to run docker-compose as an unprivileged user, so we have to add our user to
-the `docker` group.
+When we start the application with a database dump, it takes a few seconds for
+the database to become available. We can force the wordpress container to wait
+for the database to be ready by adding a `depends_on` condition to the
+WordPress container options. The `wordpress` container will wait until the
+database container passes its health check before starting.
 
-    usermod -aG docker $USER
+Before starting our application, you will need to update two IP addresses used
+by WordPress as part of its configuration. In `mysql/initdb/pi_day.sql`, search
+for the IP address 129.213.187.155 (the IP address obtained by the author while
+preparing this tutorial) and replace it with the IP address for your instance.
 
-After running this, you need to ensure that you relaunch a login shell for the change to take effect.
-You can do this explicitly with:
+After running `docker-compose up -d` with this file, we now have 3 containers
+running, and the service should take about 20 seconds to start up, due to the
+MySQL health check.
 
-    sudo -s -u $USER
+```
+[opc@cloud-native-wordpress wordpress2]$ docker-compose up -d
+[+] Running 4/4
+ ⠿ Network wordpress2_external_network  Created                                                                  0.3s
+ ⠿ Container wordpress2-db-1            Healthy                                                                 21.0s
+ ⠿ Container wordpress2-proxy-1         Started                                                                  0.6s
+ ⠿ Container wordpress2-wordpress-1     Started                                                                 21.3s
+```
 
-but for the change to take effect permanently in your instance, you will need to restart the `sshd`
-service. On the RHEL family, this means:
+We can now see how queries are being handled by the server by checking the
+container logs with `docker-compose logs -f` (the `-f` option allows us to
+follow along in real-time) while we interact with the website.
 
-    sudo systemctl restart sshd
+When we send a request to the site, we first see that the message is
+intercepted by `wordpress2-proxy-1` before being passed along to
+`wordpress2-wordpress-1`, where the page request is satisfied and returned to
+the requester.
 
-The next time you connect to your instance with ssh, you should see `docker` group in the output of
-`groups` for your user.
+```
+wordpress2-wordpress-1  | 172.20.0.4 - - [24/Feb/2023:01:52:01 +0000] "GET / HTTP/1.0" 200 11352 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+wordpress2-proxy-1      | 173.76.40.122 - - [24/Feb/2023:01:52:01 +0000] "GET / HTTP/1.1" 200 10949 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36" "-"
+wordpress2-proxy-1      | 173.76.40.122 - - [24/Feb/2023:01:52:02 +0000] "GET /2023/02/24/welcome-to-pi-day-2023/ HTTP/1.1" 200 14761 "http://129.213.187.155/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36" "-"
+wordpress2-wordpress-1  | 172.20.0.4 - - [24/Feb/2023:01:52:02 +0000] "GET /2023/02/24/welcome-to-pi-day-2023/ HTTP/1.0" 200 15359 "http://129.213.187.155/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+```
 
-To test that you now have Docker correctly installed and configured, run:
+Before proceeding: a word on creating database back-ups. To run commands in
+the context of the container, we can use `docker-compose exec servicename <cmd>`.
+To generate database back-ups for our WordPress instance, we run `mysqldump`
+inside the container as the database root user - giving the database root
+password we passed to the container at startup when prompted - and save the SQL
+file generated to the local filesystem, with:
 
-    docker run hello-world
+```
+docker-compose exec db mysqldump -u root -p wordpress > pi_day.sql
+```
 
-You should see a Docker container being downloaded from dockerhub, and a message confirming that your
-installation appears to be running correctly.
+When running a live service, you will want to do this every day in a cron job,
+and save several days of back-ups, to ensure that you can restore the service
+quickly in the event of unexpected data loss.
 
-## Getting started
+Now that we have a proxy, and the ability to reload our database after
+completely changing the application architecture, we are ready to experiment
+with load balancing! Let's move on to [part 3](../wordpress3).
 
-Now that we have things set up, check out this project:
-
-    git clone https://github.com/dneary/docker-lamp.git
-    cd docker-lamp
-
-We need a few directories to be created that do not yet exist:
-
-    mkdir -p wordpress mysql/wordpress mysql/logs mysql/initdb
-
-We can now copy a database back-up from another Wordpress site into `mysql/initdb` to initialize the
-database when we start our stack. If you don't already have a back-up, don't worry about it, we will
-go through the Wordpress installation process.
-
-We should now be ready to run:
-
-    docker-compose up -d
-
-This will process the docker-compose.yml file in this directory, and download three containers: `nginx`, 
-`wordpress`, and `mysql-server`. We start these containers as the services `proxy`, `wordpress`, and `db`,
-and they are all added to a bridge network created for the project. Since we do not (yet) have a domain name,
-we do not enable and configure `https` using SSL certificates. If all goes well, you should now be able to
-go to `http://localhost:80` and start the Wordpress installation process.
