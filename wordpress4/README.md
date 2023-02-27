@@ -25,7 +25,7 @@ view, visit the “Plugins” page, and select “Add new”. We are going to in
 two plugins – one to cache WordPress content for unauthenticated users, and
 another to enable us to connect to a Redis container.
 
-![Searching for the Redis plugin](iAdd_Redis_plugin.png)
+![Searching for the Redis plugin](Add_Redis_plugin.png)
 
 First, we will search for Redis and install and activate the official [Redis
 Object Cache plugin](https://wordpress.org/plugins/redis-cache/). To enable our
