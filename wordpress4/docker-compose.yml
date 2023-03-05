@@ -77,9 +77,9 @@ services:
     networks:
       - external_network
     volumes:
-      - ./mysql/wordpress:/var/lib/mysql
-      - ./mysql/logs:/var/log/mysql
-      - ./mysql/initdb:/docker-entrypoint-initdb.d
+      - ../mysql/wordpress:/var/lib/mysql
+      - ../mysql/logs:/var/log/mysql
+      - ../mysql/initdb:/docker-entrypoint-initdb.d
 
   redis:
     image: redis:latest
