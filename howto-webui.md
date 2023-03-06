@@ -69,4 +69,4 @@ this will max out your “Always Free” quota.
 
     *note:* If you are using Putty for SSH connectivity, you will need to convert the private key to a .PPK - [detailed steps here](https://docs.oracle.com/en/cloud/paas/goldengate-cloud/tutorial-change-private-key-format/)
 
-**You're all set!** Now head back to the [main instructions](README.md) to complete the workshop.
+**You're all set!** Now head back to the [main instructions](README.md#application-setup-and-deployment) to complete the workshop.
