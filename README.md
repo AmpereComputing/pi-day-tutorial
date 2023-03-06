@@ -40,48 +40,15 @@ will look like this:
 To begin, you will need an Ampere A1-powered Compute instance running on Oracle Cloud Infrastructure (OCI). The following provides three different options for deploying the necessary cloud infrastructure. Please select an option that you're comfortable with, and remember, you can always come back later to explore the others.
 
 1. Deploy using the [Web UI](howto-webui.md)
-2. Deploy using Terraform and [OCI Resource Manager](howto-terraform.md)
+2. Deploy using Terraform and [OCI Resource Manager](howto-terraform-rms.md)
 3. Deploy using Cloud Shell and the [Command Line Interface (CLI)](howto-commandline.md)
 
 **_important note:_** Throughout this session, we will assume that you are running Oracle Linux 8,
 and the tutorial has made this assumption for all commands, file locations,
 and usernames.
 
-<p align="center"><img src="images/simple-architecture.png" alt="Simple architecture overview" width="300" height="340" title="Reference Architecture"></p>
+<p align="center"><img src="images/simple-architecture.png" alt="Simple architecture overview" width="400" height="450" title="Reference Architecture"></p>
 <p align="center"><i>fig. 1: simple architecture overview</i></p>
-
-
-
-To create an instance, first sign up to [Oracle Cloud](https://cloud.oracle.com),
-and on the dashboard select “Create a VM instance” in the “Launch Resources”
-section. We will create the instance in the “root” compartment. In the “Image
-and shape” section, we are going to edit the defaults, and under “Shape”, we
-will change the shape to choose the Ampere type, with 4 OCPUs and 12 GB of RAM –
-this will max out your “Always Free” quota.
-
-If you already have another VM running on OCI, you can certainly complete this
-tutorial with a smaller instance, but you will increase resource contention as
-we increase the number of containers.
-
-Choosing the Ampere family:
-![Choosing the Ampere shape series](images/Oracle_Cloud_Shape_family.png)
-
-Sizing the instance:
-![Sizing the instance](images/OCI_shape_sizing.png)
-
-You will also need to modify the Virtual Cloud Network settings for the
-instance to enable HTTP and HTTPS traffic and get a public IPv4 address. Then
-generate an SSH key pair (or upload the public key to one you already have) to
-allow you to connect to the instance over SSH.
-
-Once you have completed these settings, you can click “Create” to start your
-instance. When you click on your instance name, you can find its public IP
-address for connections.
-
-You can also automate the creation of instances using a tool like Terraform –
-we provide
-[Terraform files and tutorials](ihttps://github.com/amperecomputing/terraform-oci-ampere-a1)
-on Ampere’s github page to help.
 
 ## Application setup and deployment
 
