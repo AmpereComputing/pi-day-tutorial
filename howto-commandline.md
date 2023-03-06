@@ -77,4 +77,4 @@ The entirety of this workshop can be run on a single OCI Compute Instance powere
 
     *note:* You might need to wait a minute or two after launching the instance before you can initiate the SSH connection.
 
-Now head back to the [main instructions](README.md) to complete the workshop.
+**You're all set!** Now head back to the [main instructions](README.md#application-setup-and-deployment) to complete the workshop.
