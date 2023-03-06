@@ -33,16 +33,24 @@ of our VM to port 80 of the nginx container, and use a network bridge to
 connect all of our application containers. Our final WordPress architecture
 will look like this:
 
-![Application architecture for today - nginx, 3 copies of wordpress on Apache, MySQL server, redis](Application_diagram.png)
+![Application architecture for today - nginx, 3 copies of wordpress on Apache, MySQL server, redis](images/Application_diagram.png)
 
-## Prerequisites
+## Infrastructure Deployment
 
-Before you get started, you will need an Ampere A1 instance running on
-Oracle Cloud.
+To begin, you will need an Ampere A1-powered Compute instance running on Oracle Cloud Infrastructure (OCI). The following provides three different options for deploying the necessary cloud infrastructure. Please select an option that you're comfortable with, and remember, you can always come back later to explore the others.
 
-Throughout this session, we will assume that you are running Oracle Linux 8,
+1. Deploy using the [Web UI](howto-webui.md)
+2. Deploy using Terraform and [OCI Resource Manager](howto-terraform.md)
+3. Deploy using Cloud Shell and the [Command Line Interface (CLI)](howto-commandline.md)
+
+**_important note:_** Throughout this session, we will assume that you are running Oracle Linux 8,
 and the tutorial has made this assumption for all commands, file locations,
 and usernames.
+
+<p align="center"><img src="images/simple-architecture.png" alt="Simple architecture overview" width="300" height="340" title="Reference Architecture"></p>
+<p align="center"><i>fig. 1: simple architecture overview</i></p>
+
+
 
 To create an instance, first sign up to [Oracle Cloud](https://cloud.oracle.com),
 and on the dashboard select “Create a VM instance” in the “Launch Resources”
@@ -56,10 +64,10 @@ tutorial with a smaller instance, but you will increase resource contention as
 we increase the number of containers.
 
 Choosing the Ampere family:
-![Choosing the Ampere shape series](Oracle_Cloud_Shape_family.png)
+![Choosing the Ampere shape series](images/Oracle_Cloud_Shape_family.png)
 
 Sizing the instance:
-![Sizing the instance](OCI_shape_sizing.png)
+![Sizing the instance](images/OCI_shape_sizing.png)
 
 You will also need to modify the Virtual Cloud Network settings for the
 instance to enable HTTP and HTTPS traffic and get a public IPv4 address. Then
@@ -74,6 +82,8 @@ You can also automate the creation of instances using a tool like Terraform –
 we provide
 [Terraform files and tutorials](ihttps://github.com/amperecomputing/terraform-oci-ampere-a1)
 on Ampere’s github page to help.
+
+## Application setup and deployment
 
 Once you have your instance running Oracle Linux, there are a few things we will
 need to install to ensure that we can run docker-compose to launch our application.
@@ -107,7 +117,7 @@ sudo curl -L https://github.com/docker/compose/releases/download/v2.16.0/docker-
 5. Finally, we will install `git` and download the repository for today's session:
 ```
 sudo dnf install -y git
-git clone https://github.com/AmpereComputing/pi-day-tutorial
+git clone https://github.com/dneary/pi-day-tutorial
 ```
 
 We now have everything we need to get started! We will build up in stages.
