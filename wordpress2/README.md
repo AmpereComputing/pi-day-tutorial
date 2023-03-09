@@ -60,10 +60,17 @@ for the database to be ready by adding a `depends_on` condition to the
 WordPress container options. The `wordpress` container will wait until the
 database container passes its health check before starting.
 
-Before starting our application, you will need to update two IP addresses used
-by WordPress as part of its configuration. In `mysql/initdb/pi_day.sql`, search
-for the IP address 129.213.187.155 (the IP address obtained by the author while
-preparing this tutorial) and replace it with the IP address for your instance.
+Before starting our application, we will need to update the IP addresses used
+by WordPress as part of its configuration, and in the database dump of posts
+and comments, to reflect the public IP address of your instance. 
+```
+cd ../mysql/initdb
+sed -i 's/129\.213\.187\.155/YOUR_IP_ADDRESS/g' pi_day.sql
+cd ../../wordpress2
+```
+This command replaces the IP address the author obtained while preparing the
+tutorial with YOUR_IP_ADDRESS in `mysql/initdb/pi_day.sql`. You should replace
+`YOUR_IP_ADDRESS` with the IP address for your instance.
 
 After running `docker-compose up -d` with this file, we now have 3 containers
 running, and the service should take about 20 seconds to start up, due to the
