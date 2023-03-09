@@ -4,7 +4,7 @@
 
 The entirety of this workshop can be run on a single OCI Compute Instance powered by **Ampere®**. The Compute instance will run inside of a Virtual Cloud Network (VCN) in a public subnet. If you're reading this, its because you chose to deploy these resources using Terraform and the Resource Manager Service (RMS)...so lets do this!
 
-1. Go ahead and download the pre-built Terraform configuration zip file [here](https://github.com/enschilling/pi-day-tutorial/blob/es-infra-deployment-steps/terraform/oci-pi-day-main.zip)
+1. Go ahead and download the pre-built Terraform configuration zip file [here](https://github.com/AmpereComputing/pi-day-tutorial/blob/main/terraform/oci-pi-day-main.zip)
 
 2. Log into your OCI Cloud Tenancy and navigate to Resource Manager. You'll find it in the menu under Developer Services.
 
