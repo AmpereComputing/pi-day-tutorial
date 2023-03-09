@@ -1,6 +1,6 @@
 # Welcome to Pi Day 2023!
 
-## Infrastructure Deployment with the OCI CLI
+## Infrastructure Deployment with Terraform
 
 The entirety of this workshop can be run on a single OCI Compute Instance powered by **Ampere®**. The Compute instance will run inside of a Virtual Cloud Network (VCN) in a public subnet. If you're reading this, its because you chose to deploy these resources using Terraform and the Resource Manager Service (RMS)...so lets do this!
 
